@@ -29,9 +29,53 @@ Al usar la imagen oficial `rocket.chat:8.0.1`, por defecto accedes a las caracte
     *   Mensajes directos y discusiones.
     *   Compartir archivos.
     *   Videoconferencias (vía integración Jitsi/Pexip).
-    *   Autenticación básica.
+    *   **Integración Active Directory / LDAP (Core)**:
+        *   **Autenticación**: Login con credenciales de dominio (Soporte OpenLDAP y Active Directory).
+        *   **Sincronización**: Mapeo básico de datos (Nombre, Email, UID) y sincronización de Avatares.
+        *   **Control de Acceso**: Filtros de búsqueda (Search Filter) para restringir el login a grupos específicos.
+        *   **Seguridad**: Comunicación encriptada nativa (SSL/LDAPS y StartTLS).
+        *   **Gestión**: Merge automático de usuarios por email y fallback a login local si falla el AD.
+    *   Autenticación básica (Email/Password).
 *   **Personalización**: Posibilidad de modificar CSS, añadir bots y apps del Marketplace gratuito.
 *   **Omnicanal Básico**: Integración básica con widgets de LiveChat para sitios web.
+
+### 🔌 Configuración de Active Directory / LDAP (Paso a Paso)
+Para conectar tu servidor con un dominio (AD/LDAP), sigue estos pasos dentro de la administración:
+
+1.  Ve a **Administration > Workspace > Settings > LDAP**.
+2.  **Connection**:
+    *   **Enable**: `True`
+    *   **Host**: `tu-servidor-ldap.com` (o IP)
+    *   **Port**: `389` (LDAP) o `636` (LDAPS)
+    *   **Reconnect**: `True` (Reconectar automáticamente si cae la conexión)
+3.  **Authentication**:
+    *   **User DN**: Usuario de servicio para leer el directorio (ej: `cn=Manager,dc=ejemplo,dc=com` o `dominio\usuario`).
+    *   **Password**: Contraseña del usuario de servicio.
+4.  **Encryption** (Seguridad):
+    *   Si usas puerto 636, selecciona `SSL/LDAPS`.
+    *   Si usas puerto 389 pero quieres seguridad, selecciona `StartTLS`.
+    *   Nota: Si usas certificados autofirmados, marca `True` en "Reject Unauthorized" solo si has importado el CA, de lo contrario `False` (usar con precaución en prod).
+5.  **User Search** (Filtros):
+    *   **Base DN**: Dónde buscar usuarios (ej: `ou=Usuarios,dc=empresa,dc=com`).
+    *   **Filter**: Filtro para encontrar usuarios válidos.
+        *   AD: `(&(sAMAccountName=#{username})(memberOf=cn=RocketUsers,ou=Groups,dc=empresa,dc=com))`
+        *   OpenLDAP: `(uid=#{username})`
+    *   **Search Field**: `sAMAccountName` (AD) o `uid` (OpenLDAP).
+6.  **Data Sync** (Sincronización):
+    *   Mapea los campos para que Rocket.Chat obtenga los datos del AD:
+    *   **Username Field**: `sAMAccountName` o `uid`
+    *   **Email Field**: `mail`
+    *   **Name Field**: `displayName` o `cn`
+    *   **Sync User Data on Login**: `True` (Actualiza datos al loguear).
+    *   **Merge Existing Users**: `True` (Si el email ya existe en Rocket.Chat, lo fusiona con el usuario de AD).
+
+> 💡 **Tip**: Usa el botón "Test Connection" para verificar la conectividad antes de guardar.
+
+### ⚠️ Diferencias con la versión Enterprise (De Pago)
+Lo explicado arriba **SÍ está incluido en la versión Gratis**. Sin embargo, ten en cuenta estas limitaciones:
+*   **Sincronización en segundo plano**: La versión gratis solo actualiza datos cuando el usuario se loguea ("Sync on Login"). La Enterprise permite sincronización periódica automática en segundo plano.
+*   **Mapeo de Roles**: No puedes asignar roles (Admin, Moderador) automáticamente según grupos de AD en la versión gratis.
+*   **Gestión de Equipos**: La sincronización de "Teams" de Rocket.Chat con grupos de AD es una función Enterprise.
 
 ### Ventajas de esta implementación
 *   **Portabilidad**: Todo el entorno está contenerizado; fácil de mover entre servidores.
@@ -39,6 +83,41 @@ Al usar la imagen oficial `rocket.chat:8.0.1`, por defecto accedes a las caracte
 *   **Escalabilidad Vertical**: Puedes aumentar recursos de tu servidor sin reinstalar.
 *   **Aislamiento**: Las dependencias no ensucian tu sistema operativo anfitrión.
 
+### 📦 Gestión de Backups (Base de Datos)
+Sí, estamos utilizando un **volumen de Docker** llamado `mongodb_data` para persistir los datos. Esto significa que aunque borres el contenedor, tus datos siguen seguros en el disco de tu servidor.
+
+#### 1. Crear un Respaldo (Backup)
+Para generar un archivo de respaldo completo de tu base de datos (chat, usuarios, configuraciones) sin detener el servicio:
+
+```bash
+# Ejecuta este comando en la misma carpeta donde está tu docker-compose.yaml
+docker compose exec mongodb bash -c 'mongodump --archive --gzip' > backup_rocketchat_$(date +%F).gz
+```
+*   Esto creará un archivo llamado algo como `backup_rocketchat_2024-01-14.gz` en tu carpeta actual.
+*   Guarda este archivo en un lugar seguro (otro servidor, nube, disco externo).
+
+#### 2. Restaurar un Respaldo
+⚠️ **Advertencia**: Esto sobrescribirá los datos actuales.
+
+1.  Detén Rocket.Chat (opcional pero recomendado para evitar inconsistencias):
+    ```bash
+    docker compose stop rocketchat
+    ```
+2.  Ejecuta el comando de restauración:
+    ```bash
+    # Reemplaza 'NOMBRE_ARCHIVO.gz' con tu respaldo real
+    docker compose exec -T mongodb bash -c 'mongorestore --archive --gzip --drop' < backup_rocketchat_2024-01-14.gz
+    ```
+3.  Reinicia los servicios:
+    ```bash
+    docker compose start rocketchat
+    ```
+
+#### 3. ¿Dónde están mis datos físicamente?
+Como usamos un volumen de Docker, los datos "crudos" suelen estar en:
+`/var/lib/docker/volumes/rocketchat_mongodb_data/_data` (La ruta exacta depende del nombre de tu carpeta del proyecto).
+
+___
 ## 📋 Requisitos del Sistema
 El hardware necesario depende directamente de la cantidad de usuarios activos.
 

@@ -6,7 +6,7 @@ volumes:
 
 services:
   mongodb:
-    image: docker.io/library/mongo:7.0
+    image: docker.io/library/mongo:7.0.28
     restart: always
     volumes:
       - mongodb_data:/data/db
@@ -19,7 +19,7 @@ services:
       retries: 5
 
   mongodb-init:
-    image: docker.io/library/mongo:7.0
+    image: docker.io/library/mongo:7.0.28
     depends_on:
       mongodb:
         condition: service_healthy

@@ -6,30 +6,36 @@ volumes:
 
 services:
   mongodb:
-    image: docker.io/library/mongo:5.0
+    image: docker.io/library/mongo:7.0
     restart: always
     volumes:
       - mongodb_data:/data/db
     # Este comando es vital para activar el tiempo real de Rocket.Chat
     command: mongod --replSet rs0 --oplogSize 128
     healthcheck:
-      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  mongodb-init:
+    image: docker.io/library/mongo:7.0
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    command: >
+      mongosh --host mongodb:27017 --eval 
+      'try { rs.initiate({ _id: "rs0", members: [ { _id: 0, host: "mongodb:27017" } ] }) } catch(e) { print(e); }'
+
   rocketchat:
-    image: docker.io/library/rocket.chat:latest
+    build: .
     restart: always
     depends_on:
       mongodb:
         condition: service_healthy
-    environment:
-      - MONGO_URL=mongodb://mongodb:27017/rocketchat?replicaSet=rs0
-      - MONGO_OPLOG_URL=mongodb://mongodb:27017/local?replicaSet=rs0
-      - ROOT_URL=http://localhost:3000
-      - PORT=3000
-      - DEPLOY_METHOD=docker
-      - 
+      mongodb-init:
+        condition: service_completed_successfully
+    env_file:
+      - .env
     ports:
       - "3000:3000"

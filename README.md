@@ -119,6 +119,7 @@ Como usamos un volumen de Docker, los datos "crudos" suelen estar en:
 
 ___
 ## 📋 Requisitos del Sistema
+### 🖥️ Servidor
 El hardware necesario depende directamente de la cantidad de usuarios activos.
 
 | Recurso | Mínimo (1-50 usuarios) | Recomendado (50-200 usuarios) | Alto Rendimiento (200-500 usuarios) | Empresarial (500+ usuarios) |
@@ -127,6 +128,48 @@ El hardware necesario depende directamente de la cantidad de usuarios activos.
 | **RAM** | 2 GB | 4 GB | 8 GB | 16 GB - 32 GB |
 | **Disco** | 20 GB (SSD) | 50 GB+ | 100 GB+ (SSD NVMe) | 200 GB+ (Recomendado S3) |
 | **OS** | Linux | Linux | Linux (Optimized) | Linux (Cluster/K8s) |
+
+### 💻 Cliente (Usuario Final)
+Para garantizar una experiencia fluida, aquí detallamos los requisitos para los usuarios que acceden al chat, considerando tanto equipos modernos como hardware más antiguo.
+
+#### 🌐 Cliente Web (Navegador)
+La forma más ligera de acceder. Ideal para equipos con recursos limitados.
+
+| Recurso | Mínimo (Equipos Antiguos/Limitados) | Recomendado (Experiencia Óptima) |
+| :--- | :--- | :--- |
+| **Navegador** | Chrome 80+, Firefox 75+, Safari 13+ | Últimas versiones de Chrome, Edge, Firefox, Safari |
+| **CPU** | Dual Core (Ej. Core 2 Duo) | Quad Core o superior (i5/i7/M1/M2) |
+| **RAM (Sistema)** | 4 GB Totales | 8 GB - 16 GB+ |
+| **Resolución** | 1280 x 720 | 1920 x 1080 (FHD) o superior |
+
+#### 🖥️ Cliente de Escritorio (Desktop App)
+La aplicación oficial (basada en Electron) ofrece mejor integración con el OS pero consume más recursos que una pestaña web.
+
+| OS | Versión Mínima Oficial | Versión Legacy (Win 7) | Notas IMPORTANTES |
+| :--- | :--- | :--- | :--- |
+| **Windows** | Windows 10 / 11 | Windows 7 SP1 (64-bit) | Win 7 **NO soportado** en app moderna. Requiere versión `2.17.x` o `3.x` (Ver abajo). |
+| **macOS** | macOS 10.13 | N/A | Soporte nativo universal. |
+| **Linux** | Ubuntu 20.04+ | Ubuntu 18.04 | Requiere `libappindicator` en algunos entornos. |
+
+#### ⚠️ Caso Especial: Windows 7 y Equipos Antiguos
+Para equipos que **no pueden actualizarse** a Windows 10/11, existen dos caminos, ordenados de mejor a peor opción:
+
+1.  **🥇 Opción Recomendada: Cliente Web (Navegador)**
+    *   Es la opción más estable y segura para Windows 7 hoy en día.
+    *   **Navegador**: Debes usar **Chrome versión 109** (la última compatible con Win 7) o **Firefox ESR**.
+    *   **Ventaja**: Compatible con todas las funciones modernas del servidor Rocket.Chat 6.x/7.x.
+
+2.  **🥈 Opción Alternativa: App de Escritorio "Legacy"**
+    *   Las versiones nuevas de Rocket.Chat Desktop (> 3.9) **NO funcionan** en Windows 7.
+    *   **Solución**: Instalar una versión antigua como la **2.17.11** o **3.8.14**.
+    *   **Desventaja Crítica**: Es posible que algunas funciones nuevas (como cifrado o llamadas) fallen al conectarse a este servidor moderno. Además, **no recibirás actualizaciones de seguridad**.
+
+#### ⚙️ Optimización para Hardware Muy Limitado (2GB RAM o menos)
+Si el equipo es antiguo (ej. Core 2 Duo, 2GB RAM), sigue estas reglas de oro:
+1.  **NO usar la App de Escritorio**: Consume ~400MB de RAM solo por abrirse. Usa el navegador.
+2.  **Activa el "Modo Ligero"**:
+    *   *Preferencias > Mensajes*: Activar "Ocultar previsualización de enlaces", "Ocultar imágenes", "Ocultar avatares".
+3.  **Animaciones**: Deshabilita las animaciones del sistema operativo (Windows 7: "Ajustar para obtener el mejor rendimiento").
 
 ## 🛠️ Cómo Iniciar
 
